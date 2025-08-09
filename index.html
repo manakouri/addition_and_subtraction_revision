@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maths Revision Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+            transition: all 0.3s ease-in-out;
+        }
+        .progress-bar-bg {
+            background-color: #e5e7eb; /* gray-200 */
+        }
+        .progress-bar-fill {
+            background-color: #4f46e5; /* indigo-600 */
+            transition: width 0.5s ease-in-out;
+        }
+        .feedback-correct {
+            color: #16a34a; /* green-600 */
+        }
+        .feedback-incorrect {
+            color: #dc2626; /* red-600 */
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        /* Styles for vertical algorithm */
+        .vertical-algorithm {
+            font-family: monospace, 'Courier New', Courier;
+            font-size: 1.5rem;
+            line-height: 1.2;
+            margin: 0.5rem auto;
+            display: inline-block;
+            text-align: right;
+        }
+        .vertical-algorithm table {
+            border-collapse: collapse;
+        }
+        .vertical-algorithm td {
+            padding: 0 0.1em;
+            text-align: center;
+        }
+        .vertical-algorithm .operator {
+            text-align: left;
+            padding-right: 0.5rem;
+        }
+        .vertical-algorithm .line td {
+            border-top: 2px solid #374151;
+            padding: 0;
+            height: 2px;
+        }
+        .vertical-algorithm .adjustment-row {
+            color: #4f46e5; /* indigo-600 */
+            height: 1.2rem;
+            font-size: 1rem;
+        }
+        .vertical-algorithm del {
+            color: #ef4444; /* red-500 */
+            text-decoration: line-through;
+        }
+        .vertical-algorithm .borrowed-to {
+            color: #16a34a; /* green-600 */
+            font-size: 1rem;
+            vertical-align: super;
+            margin-right: -0.5em; /* Pull the next digit closer */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="card w-full max-w-2xl text-center">
+
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Maths Revision Challenge</h1>
+            <p class="text-lg text-gray-600 mb-8">Work your way through 5 levels of addition and subtraction problems. You need 80% accuracy to advance. Good luck!</p>
+            <button id="start-btn" class="btn w-full md:w-1/2 mx-auto bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg text-xl">
+                Start Game
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="level-title" class="text-2xl font-bold text-indigo-700">Level 1</h2>
+                <p id="score-tracker" class="text-lg font-medium text-gray-700">Score: 0/0</p>
+            </div>
+            <div class="progress-bar-bg w-full h-4 rounded-full mb-6">
+                <div id="progress-bar" class="progress-bar-fill h-4 rounded-full" style="width: 0%;"></div>
+            </div>
+            <p id="question-text" class="text-2xl md:text-3xl text-gray-800 my-8 min-h-[100px] flex items-center justify-center"></p>
+            <div class="mt-4">
+                <input type="text" id="answer-input" class="w-full px-4 py-3 text-2xl border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-center" placeholder="Type your answer">
+            </div>
+            <!-- Action Buttons -->
+            <div id="action-buttons" class="mt-6">
+                 <button id="submit-btn" class="btn w-full md:w-1/2 mx-auto bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg text-lg">
+                    Submit
+                </button>
+                <button id="continue-btn" class="hidden btn w-full md:w-1/2 mx-auto bg-blue-600 text-white font-bold py-3 px-4 rounded-lg text-lg">
+                    Next
+                </button>
+            </div>
+            <p id="feedback-text" class="mt-6 h-8 text-xl font-medium"></p>
+            <!-- Worked Example Area -->
+            <div id="worked-example-area" class="hidden mt-4 p-4 bg-gray-50 rounded-lg text-left border border-gray-200">
+                <!-- Content will be injected by JS -->
+            </div>
+        </div>
+
+        <!-- Level Up / Try Again Screen -->
+        <div id="transition-screen" class="hidden">
+            <h2 id="transition-title" class="text-4xl font-bold text-gray-800 mb-4"></h2>
+            <p id="transition-message" class="text-lg text-gray-600 mb-8"></p>
+            <button id="next-level-btn" class="btn w-full md:w-1/2 mx-auto bg-green-500 text-white font-bold py-3 px-6 rounded-lg text-xl">
+                Continue
+            </button>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory-screen" class="hidden">
+            <h1 class="text-4xl font-bold text-yellow-500 mb-4">Challenge Complete!</h1>
+            <p class="text-lg text-gray-600 mb-8">You have mastered all levels. Incredible work!</p>
+            <div class="grid grid-cols-2 gap-4 text-2xl">
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <p class="text-gray-500 font-medium">Total Time</p>
+                    <p id="total-time" class="font-bold text-indigo-600"></p>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <p class="text-gray-500 font-medium">Total Questions</p>
+                    <p id="total-questions" class="font-bold text-indigo-600"></p>
+                </div>
+            </div>
+            <button id="play-again-btn" class="btn w-full md:w-1/2 mx-auto mt-8 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg text-xl">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const transitionScreen = document.getElementById('transition-screen');
+        const victoryScreen = document.getElementById('victory-screen');
+        
+        const startBtn = document.getElementById('start-btn');
+        const levelTitle = document.getElementById('level-title');
+        const scoreTracker = document.getElementById('score-tracker');
+        const progressBar = document.getElementById('progress-bar');
+        const questionText = document.getElementById('question-text');
+        const answerInput = document.getElementById('answer-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const continueBtn = document.getElementById('continue-btn');
+        const feedbackText = document.getElementById('feedback-text');
+        const workedExampleArea = document.getElementById('worked-example-area');
+        
+        const transitionTitle = document.getElementById('transition-title');
+        const transitionMessage = document.getElementById('transition-message');
+        const nextLevelBtn = document.getElementById('next-level-btn');
+        
+        const totalTime = document.getElementById('total-time');
+        const totalQuestions = document.getElementById('total-questions');
+        const playAgainBtn = document.getElementById('play-again-btn');
+
+        // --- Game State ---
+        let currentLevel = 1;
+        let questionsAnsweredThisLevel = 0;
+        let correctAnswersThisLevel = 0;
+        let totalQuestionsAnsweredOverall = 0;
+        let startTime;
+        let currentQuestion = {};
+
+        // --- Pass Requirements ---
+        const MIN_QUESTIONS_PER_LEVEL = 5;
+        const PASS_RATE = 0.8;
+
+        // --- Question Generation ---
+        const wordProblemTemplates = {
+            add: [
+                { q: "{name} has {n1} {item}. They get {n2} more. How many {item} do they have now?", items: ["apples", "books", "marbles", "stickers"] },
+                { q: "A recipe needs {n1}g of flour and {n2}g of sugar. What is the total weight?", items: [] },
+                { q: "Rich has ${n1}. He earns ${n2} more. How much money does he have now?", items: [] },
+                { q: "The temperature was {n1}°C. It rose by {n2}°C. What is the new temperature?", items: [] }
+            ],
+            subtract: [
+                { q: "{name} has {n1} {item}. They give away {n2}. How many are left?", items: ["cookies", "pencils", "cards", "coins"] },
+                { q: "A piece of wood is {n1}m long. A piece {n2}m long is cut off. How much is left?", items: [] },
+                { q: "You have ${n1} and spend ${n2}. How much money is left?", items: [] },
+                { q: "The temperature was {n1}°C. It fell by {n2}°C. What is the new temperature?", items: [] }
+            ]
+        };
+        const names = ["Sam", "Chloe", "Ben", "Aisha", "Tom"];
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function getRandomFloat(min, max, decimals) {
+            const str = (Math.random() * (max - min) + min).toFixed(decimals);
+            return parseFloat(str);
+        }
+
+        function generateQuestion(level) {
+            let n1, n2, answer, question, op;
+            op = Math.random() < 0.5 ? 'add' : 'subtract';
+            
+            let isWordProblem = false;
+            if (level > 2) {
+                 isWordProblem = Math.random() < 0.4;
+            }
+
+            const fixFloat = (num, decimals) => parseFloat(num.toFixed(decimals));
+
+            switch (level) {
+                case 1:
+                    if (op === 'add') {
+                        const d1 = getRandomInt(1, 8);
+                        const d2 = getRandomInt(1, 9 - d1);
+                        const t1 = getRandomInt(1, 8);
+                        const t2 = getRandomInt(1, 9 - t1);
+                        n1 = t1 * 10 + d1;
+                        n2 = t2 * 10 + d2;
+                    } else {
+                        const d1 = getRandomInt(1, 9);
+                        const d2 = getRandomInt(0, d1);
+                        const t1 = getRandomInt(1, 9);
+                        const t2 = getRandomInt(1, t1);
+                        n1 = t1 * 10 + d1;
+                        n2 = t2 * 10 + d2;
+                    }
+                    break;
+                case 2:
+                    n1 = getRandomInt(10, 99);
+                    n2 = getRandomInt(1, n1 - 1);
+                    break;
+                case 3:
+                    n1 = getRandomInt(100, 999);
+                    n2 = getRandomInt(10, n1 - 10);
+                    break;
+                case 4:
+                    n1 = getRandomFloat(10, 500, 2);
+                    n2 = getRandomFloat(1, n1 - 1, 2);
+                    break;
+                case 5:
+                    if (Math.random() < 0.5) {
+                        n1 = getRandomFloat(10, 1000, 3);
+                        n2 = getRandomFloat(1, n1 - 1, 3);
+                    } else {
+                        n1 = getRandomInt(-50, 50);
+                        n2 = getRandomInt(-50, 50);
+                    }
+                    break;
+            }
+
+            if (op === 'add') {
+                answer = n1 + n2;
+                question = `${n1} + ${n2} = ?`;
+            } else {
+                answer = n1 - n2;
+                question = `${n1} - ${n2} = ?`;
+            }
+            
+            const decimals = Math.max((n1.toString().split('.')[1] || '').length, (n2.toString().split('.')[1] || '').length);
+            answer = fixFloat(answer, decimals);
+
+            let originalN1 = n1;
+            let originalN2 = n2;
+
+            if (isWordProblem) {
+                const templatePool = wordProblemTemplates[op];
+                const template = templatePool[getRandomInt(0, templatePool.length - 1)];
+                const name = names[getRandomInt(0, names.length - 1)];
+                const item = template.items.length > 0 ? template.items[getRandomInt(0, template.items.length - 1)] : '';
+                
+                if (op === 'subtract' && n1 < n2) {
+                    [n1, n2] = [n2, n1];
+                    answer = n1 - n2;
+                    originalN1 = n1;
+                    originalN2 = n2;
+                }
+                let displayN2 = (template.q.includes('°C') && op === 'subtract') ? Math.abs(n2) : n2;
+                question = template.q.replace('{name}', name).replace('{n1}', n1).replace('{n2}', displayN2).replace(/{item}/g, item);
+            }
+
+            return { question, answer, n1: originalN1, n2: originalN2, op };
+        }
+
+        /**
+         * --- UPDATED: Generates HTML for the worked example ---
+         */
+        function generateWorkedExampleHTML(q) {
+            if (currentLevel <= 2) {
+                if (q.op === 'add' && currentLevel === 2) {
+                    const diff = 10 - (q.n1 % 10);
+                    if (diff < 10 && (q.n2 - diff) >= 0) {
+                        const newN1 = q.n1 + diff;
+                        const newN2 = q.n2 - diff;
+                        return `
+                            <p class="font-semibold text-gray-700">Here's an easier way to solve this:</p>
+                            <p class="mt-2 text-lg">The problem can be <strong class="text-indigo-600">rearranged</strong>. We can take ${diff} from ${q.n2} and give it to ${q.n1}.</p>
+                            <p class="mt-1 text-2xl text-center font-bold text-gray-800">
+                                ${newN1} + ${newN2} = <strong class="text-green-600">${q.answer}</strong>
+                            </p>
+                        `;
+                    }
+                } else if (q.op === 'subtract' && currentLevel === 2) {
+                    const diff = 10 - (q.n2 % 10);
+                     if (diff < 10) {
+                        const newN1 = q.n1 + diff;
+                        const newN2 = q.n2 + diff;
+                        return `
+                            <p class="font-semibold text-gray-700">Here's an easier way to solve this:</p>
+                            <p class="mt-2 text-lg">The problem can be <strong class="text-indigo-600">shifted</strong>. We add ${diff} to both numbers to make the second number tidy.</p>
+                            <p class="mt-1 text-2xl text-center font-bold text-gray-800">
+                                ${newN1} - ${newN2} = <strong class="text-green-600">${q.answer}</strong>
+                            </p>
+                        `;
+                    }
+                }
+            }
+            
+            const operator = q.op === 'add' ? '+' : '-';
+            let [s1, s2, sAns] = [q.n1.toString(), q.n2.toString(), q.answer.toString()];
+            
+            const d1 = s1.includes('.') ? s1.split('.')[1].length : 0;
+            const d2 = s2.includes('.') ? s2.split('.')[1].length : 0;
+            const dAns = sAns.includes('.') ? sAns.split('.')[1].length : 0;
+            const maxD = Math.max(d1, d2, dAns);
+
+            if (maxD > 0) {
+                s1 = q.n1.toFixed(maxD);
+                s2 = q.n2.toFixed(maxD);
+                sAns = q.answer.toFixed(maxD);
+            }
+
+            const maxLength = Math.max(s1.length, s2.length, sAns.length);
+            
+            let topRowArr = s1.padStart(maxLength, ' ').split('');
+            let bottomRowArr = s2.padStart(maxLength, ' ').split('');
+            let adjustmentRowArr = Array(maxLength).fill(' ');
+            
+            if (q.op === 'add') {
+                let carry = 0;
+                for (let i = maxLength - 1; i >= 0; i--) {
+                    if (topRowArr[i] === '.') continue;
+                    const digit1 = parseInt(topRowArr[i]) || 0;
+                    const digit2 = parseInt(bottomRowArr[i]) || 0;
+                    const sum = digit1 + digit2 + carry;
+                    carry = Math.floor(sum / 10);
+                    if (carry > 0) {
+                        let carryIndex = i - 1;
+                        while(carryIndex >= 0 && topRowArr[carryIndex] === '.') carryIndex--;
+                        if(carryIndex >= 0) adjustmentRowArr[carryIndex] = carry;
+                    }
+                }
+            } else { // Subtract
+                let tempTopRow = s1.trim().split('').map(d => d === '.' ? '.' : parseInt(d));
+                let s2_aligned = s2.trim();
+                
+                for (let i = tempTopRow.length - 1; i >= 0; i--) {
+                    if (tempTopRow[i] === '.') continue;
+                    let digit1 = tempTopRow[i];
+                    let digit2_str = s2_aligned[i - (tempTopRow.length - s2_aligned.length)];
+                    let digit2 = parseInt(digit2_str) || 0;
+
+                    if (digit1 < digit2) {
+                        let j = i - 1;
+                        while (j >= 0) {
+                            if (tempTopRow[j] === '.') { j--; continue; }
+                            if (tempTopRow[j] > 0) {
+                                tempTopRow[j]--;
+                                tempTopRow[i] += 10;
+                                break;
+                            } else {
+                                tempTopRow[j] = 9;
+                            }
+                            j--;
+                        }
+                    }
+                }
+
+                let originalTop = s1.trim().split('');
+                for(let i = 0; i < originalTop.length; i++){
+                    const originalDigit = originalTop[i];
+                    const modifiedDigit = tempTopRow[i];
+                    const padIndex = maxLength - originalTop.length + i;
+                    
+                    let html = originalDigit;
+                    if (originalDigit !== '.' && parseInt(originalDigit) !== (modifiedDigit % 10)) {
+                        html = `<del>${originalDigit}</del>`;
+                        adjustmentRowArr[padIndex] = modifiedDigit % 10;
+                    }
+                    if (modifiedDigit > 9 && originalDigit !== '.') {
+                        html = `<span class="borrowed-to">1</span>` + html;
+                    }
+                    topRowArr[padIndex] = html;
+                }
+            }
+
+            const answerStr = sAns.padStart(maxLength, ' ');
+            
+            let tableHTML = '<table>';
+            tableHTML += `<tr><td></td>${adjustmentRowArr.map(c => `<td class="adjustment-row">${c}</td>`).join('')}</tr>`;
+            tableHTML += `<tr><td></td>${topRowArr.map(c => `<td>${c}</td>`).join('')}</tr>`;
+            tableHTML += `<tr><td class="operator">${operator}</td>${bottomRowArr.map(c => `<td>${c}</td>`).join('')}</tr>`;
+            tableHTML += `<tr class="line"><td colspan="${maxLength + 1}"></td></tr>`;
+            tableHTML += `<tr><td></td>${answerStr.split('').map(c => `<td><strong class="text-green-600">${c}</strong></td>`).join('')}</tr>`;
+            tableHTML += '</table>';
+
+            return `
+                <p class="font-semibold text-gray-700">Here is the calculation using a vertical algorithm:</p>
+                <div class="vertical-algorithm">${tableHTML}</div>
+            `;
+        }
+
+        // --- Game Flow ---
+        function startGame() {
+            startTime = new Date();
+            totalQuestionsAnsweredOverall = 0;
+            currentLevel = 1;
+            startScreen.classList.add('hidden');
+            victoryScreen.classList.add('hidden');
+            startLevel();
+        }
+
+        function startLevel() {
+            questionsAnsweredThisLevel = 0;
+            correctAnswersThisLevel = 0;
+            levelTitle.textContent = `Level ${currentLevel}`;
+            transitionScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            displayNewQuestion();
+            updateProgress();
+        }
+
+        function displayNewQuestion() {
+            currentQuestion = generateQuestion(currentLevel);
+            questionText.innerHTML = currentQuestion.question;
+            answerInput.value = '';
+            feedbackText.textContent = '';
+            workedExampleArea.classList.add('hidden');
+            workedExampleArea.innerHTML = '';
+            submitBtn.classList.remove('hidden');
+            continueBtn.classList.add('hidden');
+            answerInput.disabled = false;
+            answerInput.focus();
+        }
+
+        function checkAnswer() {
+            const userAnswer = parseFloat(answerInput.value);
+            if (isNaN(userAnswer)) {
+                feedbackText.textContent = "Please enter a valid number.";
+                feedbackText.classList.add('feedback-incorrect');
+                return;
+            }
+
+            totalQuestionsAnsweredOverall++;
+            questionsAnsweredThisLevel++;
+            answerInput.disabled = true;
+            
+            const isCorrect = Math.abs(userAnswer - currentQuestion.answer) < 0.0001;
+
+            if (isCorrect) {
+                correctAnswersThisLevel++;
+                feedbackText.textContent = "Correct!";
+                feedbackText.className = 'mt-6 h-8 text-xl font-medium feedback-correct';
+                setTimeout(() => {
+                    checkLevelProgression();
+                }, 1200);
+            } else {
+                feedbackText.textContent = `Not quite.`;
+                feedbackText.className = 'mt-6 h-8 text-xl font-medium feedback-incorrect';
+                
+                workedExampleArea.innerHTML = generateWorkedExampleHTML(currentQuestion);
+                workedExampleArea.classList.remove('hidden');
+                
+                submitBtn.classList.add('hidden');
+                continueBtn.classList.remove('hidden');
+            }
+            
+            updateProgress();
+        }
+        
+        function updateProgress() {
+            const accuracy = questionsAnsweredThisLevel === 0 ? 0 : (correctAnswersThisLevel / questionsAnsweredThisLevel);
+            scoreTracker.textContent = `Score: ${correctAnswersThisLevel}/${questionsAnsweredThisLevel}`;
+            progressBar.style.width = `${accuracy * 100}%`;
+            progressBar.style.backgroundColor = accuracy < PASS_RATE ? '#ef4444' : '#22c55e';
+        }
+
+        function checkLevelProgression() {
+            if (questionsAnsweredThisLevel < MIN_QUESTIONS_PER_LEVEL) {
+                displayNewQuestion();
+                return;
+            }
+
+            const accuracy = correctAnswersThisLevel / questionsAnsweredThisLevel;
+
+            if (accuracy >= PASS_RATE) {
+                if (currentLevel === 5) {
+                    endGame();
+                } else {
+                    showTransition(true);
+                }
+            } else {
+                showTransition(false);
+            }
+        }
+
+        function showTransition(isPass) {
+            gameScreen.classList.add('hidden');
+            transitionScreen.classList.remove('hidden');
+            if (isPass) {
+                transitionTitle.textContent = `Level ${currentLevel} Passed!`;
+                transitionMessage.textContent = "Great job! Get ready for the next challenge.";
+                nextLevelBtn.textContent = "Start Level " + (currentLevel + 1);
+                nextLevelBtn.onclick = () => {
+                    currentLevel++;
+                    startLevel();
+                };
+            } else {
+                transitionTitle.textContent = "Not Quite...";
+                transitionMessage.textContent = `You need at least 80% to pass. Let's try Level ${currentLevel} again.`;
+                nextLevelBtn.textContent = "Try Again";
+                nextLevelBtn.onclick = startLevel;
+            }
+        }
+
+        function endGame() {
+            const endTime = new Date();
+            const timeDiff = Math.round((endTime - startTime) / 1000);
+            const minutes = Math.floor(timeDiff / 60);
+            const seconds = timeDiff % 60;
+            
+            totalTime.textContent = `${minutes}m ${seconds}s`;
+            totalQuestions.textContent = totalQuestionsAnsweredOverall;
+
+            gameScreen.classList.add('hidden');
+            victoryScreen.classList.remove('hidden');
+        }
+
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', startGame);
+        playAgainBtn.addEventListener('click', startGame);
+        submitBtn.addEventListener('click', checkAnswer);
+        continueBtn.addEventListener('click', checkLevelProgression);
+        answerInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                if (!submitBtn.classList.contains('hidden')) {
+                    submitBtn.click();
+                } else {
+                    continueBtn.click();
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
