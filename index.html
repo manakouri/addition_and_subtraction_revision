@@ -105,7 +105,7 @@
             </div>
             <p id="question-text" class="text-2xl md:text-3xl text-gray-800 my-8 min-h-[100px] flex items-center justify-center"></p>
             <div class="mt-4">
-                <input type="text" id="answer-input" class="w-full px-4 py-3 text-2xl border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-center" placeholder="Type your answer">
+                <input type="text" id="answer-input" class="w-full px-4 py-3 text-2xl border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-center" placeholder="Type your answer" autocomplete="off">
             </div>
             <!-- Action Buttons -->
             <div id="action-buttons" class="mt-6">
@@ -193,9 +193,9 @@
         // --- Question Generation ---
         const wordProblemTemplates = {
             add: [
-                { q: "{name} has {n1} {item}, and gets {n2} more. How many do they have altogether?", items: ["apples", "books", "marbles", "stickers"] },
+                { q: "{name} has {n1} {item}, and gets {n2} more. How many {item} does {name} have now?", items: ["apples", "books", "marbles", "stickers"] },
                 { q: "A recipe needs {n1}g of flour and {n2}g of sugar. What is the total weight?", items: [] },
-                { q: "{name} has ${n1}, and earns ${n2} more. How much money do they have now?", items: [] },
+                { q: "{name} has ${n1}, and earns ${n2} more. How much money does {name} have now?", items: [] },
                 { q: "The temperature was {n1}°C. It rose by {n2}°C. What is the new temperature?", items: [] }
             ],
             subtract: [
@@ -245,19 +245,19 @@
                         n2 = t2 * 10 + d2;
                     }
                     break;
-                case 2: // --- UPDATED: All questions require regrouping ---
+                case 2:
                     if (op === 'add') {
                         const d1 = getRandomInt(1, 9);
-                        const d2 = getRandomInt(10 - d1, 9); // Ensures ones digits sum to > 9
+                        const d2 = getRandomInt(10 - d1, 9);
                         const t1 = getRandomInt(1, 7);
-                        const t2 = getRandomInt(1, 8 - t1); // Ensures total is < 100
+                        const t2 = getRandomInt(1, 8 - t1);
                         n1 = t1 * 10 + d1;
                         n2 = t2 * 10 + d2;
-                    } else { // subtract
+                    } else {
                         const d2 = getRandomInt(1, 9);
-                        const d1 = getRandomInt(0, d2 - 1); // Ensures n1 ones is smaller than n2 ones
+                        const d1 = getRandomInt(0, d2 - 1);
                         const t1 = getRandomInt(2, 9);
-                        const t2 = getRandomInt(1, t1 - 1); // Ensures n1 tens is larger than n2 tens
+                        const t2 = getRandomInt(1, t1 - 1);
                         n1 = t1 * 10 + d1;
                         n2 = t2 * 10 + d2;
                     }
@@ -468,7 +468,10 @@
         }
 
         function checkAnswer() {
-            const userAnswer = parseFloat(answerInput.value);
+            // --- UPDATED: Handle commas in user input ---
+            const sanitizedInput = answerInput.value.replace(/,/g, '');
+            const userAnswer = parseFloat(sanitizedInput);
+
             if (isNaN(userAnswer)) {
                 feedbackText.textContent = "Please enter a valid number.";
                 feedbackText.classList.add('feedback-incorrect');
